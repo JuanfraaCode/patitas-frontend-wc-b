@@ -50,7 +50,9 @@ public class LoginControllerAsync {
         }
     }
 
-    @PostMapping("/logout-async")
+
+    // PARTE DEL EXAMEN T2
+    @PostMapping("/logout")
     public Mono<LogoutResponseDTO> logout(@RequestBody LogoutRequestDTO logoutRequestDTO){
 
         if (logoutRequestDTO.tipoDocumento() == null || logoutRequestDTO.tipoDocumento().trim().length() == 0 ||
@@ -59,19 +61,22 @@ public class LoginControllerAsync {
             LoginModel loginModel = new LoginModel("99", "Error: debe completar sus credenciales correctamente","");
 
             return Mono.just(new LogoutResponseDTO(false, null, "Error: debe completar sus credenciales correctamente"));
-    }
-        try {
-            return webClientAutenticacion.post().uri("/logout").body(Mono.just(logoutRequestDTO), LoginResponseDTO.class)
-                    .retrieve().bodyToMono(LogoutResponseDTO.class)
-                            .flatMap(response ->{
+        }
+
+        return webClientAutenticacion.post()
+                .uri("/logout")
+                .body(Mono.just(logoutRequestDTO), LogoutResponseDTO.class)
+                .retrieve()
+                .bodyToMono(LogoutResponseDTO.class)
+                .flatMap(response ->{
                 if (response.resultado().equals(true)){
                     return Mono.just(new LogoutResponseDTO(true, response.fecha(), response.msjError()));
                 } else
                     return Mono.just(new LogoutResponseDTO(false,null, "Error: no se pudo cerrar sesión"));
+            })
+                .onErrorResume(e ->{
+                    System.out.println(e.getMessage());
+                    return Mono.just(new LogoutResponseDTO(false, null,"Error: en logout"));
             });
-        } catch (Exception e){
-            System.out.println(e.getMessage());
-            return Mono.just(new LogoutResponseDTO(false, null,"Error: en logout"));
-        }
     }
 }
